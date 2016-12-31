@@ -1,0 +1,32 @@
+---
+- hosts: all
+  remote_user: ec2-user
+  vars:
+    s3_spiegel_path: '' # S3 path
+    remote_spiegel_dir: data
+
+  tasks:
+  - name: Installing R
+    yum: name=R state=latest
+    become: yes
+    async: 1800
+    poll: 0
+  - name: Create .aws dir
+    file: path=/home/ec2-user/.aws/ state=directory mode=0755
+  - name: Touch .aws/credentials
+    file: path=/home/ec2-user/.aws/credentials state=touch mode="u=rw,g=r,o=r"
+  - name: Touch .aws/config
+    file: path=/home/ec2-user/.aws/config state=touch mode="u=rw,g=r,o=r"
+  - name: Adding key to credentials
+    ini_file: dest=/home/ec2-user/.aws/credentials section=default option=aws_access_key_id value=#YourKey mode=0644
+  - name: Adding key to credentials
+    ini_file: dest=/home/ec2-user/.aws/credentials section=default option=aws_secret_access_key value=#YourKey
+  - name: Adding region to config
+    ini_file: dest=/home/ec2-user/.aws/config section=default option=region value=us-east-1
+  - name: Install R package - plyr
+    shell: Rscript -e 'install.packages("plyr", repos="https://cran.rstudio.com")'
+    become: yes
+    async: 1800
+    poll: 0
+  - name: Create spiegel directory
+    file: path=/home/ec2-user/{{ remote_spiegel_dir }}/ state=directory mode=0755
