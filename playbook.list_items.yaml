@@ -1,0 +1,47 @@
+---
+- hosts: all
+  remote_user: ec2-user
+  vars:
+    s3_spiegel_path: '' # S3 path
+    remote_spiegel_dir: data
+
+  tasks:
+    # list items in local host directory and save to file in the master
+    - shell: 'ls result*.txt' # list
+      register: list_files
+      args:
+        chdir: /home/ec2-user/data
+    - local_action: copy content={{ list_files.stdout }} dest=/dest_folder/test.txt # save to file
+    - debug: var={{item}} # This will screen out
+      with_items: list_files.stdout
+
+    # Recursively find /tmp files older than 2 days
+    - find:
+        paths: "/tmp"
+        age: "2d"
+        recurse: yes
+    # Recursively find /tmp files older than 4 weeks and equal or greater than 1 megabyte
+    - find:
+        paths: "/tmp"
+        age: "4w"
+        size: "1m"
+        recurse: yes
+    # Recursively find /var/tmp files with last access time greater than 3600 seconds
+    - find:
+        paths: "/var/tmp"
+        age: "3600"
+        age_stamp: atime
+        recurse: yes
+    # find /var/log files equal or greater than 10 megabytes ending with .old or .log.gz
+    - find:
+        paths: "/var/tmp"
+        patterns: "*.old,*.log.gz"
+        size: "10m"
+    # find /var/log files equal or greater than 10 megabytes ending with .old or .log.gz via regex
+    # Note that yaml double quotes require escaping backslashes but yaml single
+    # quotes do not.
+    - find:
+        paths: "/var/tmp"
+        patterns: "^.*?\\.(?:old|log\\.gz)$"
+        size: "10m"
+        use_regex: True
